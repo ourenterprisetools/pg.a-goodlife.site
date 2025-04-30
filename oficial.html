@@ -298,84 +298,93 @@
 <script>
 (function () {
   /* ─── Utilidades ────────────────────────────────────────── */
-  function getCookie (name) {
-    const match = ('; ' + document.cookie).match('; ' + name + '=([^;]*)');
-    return match ? match[1] : null;          // retorna o valor ou null
+  function getCookie(name) {
+    const m = ('; ' + document.cookie).match('; ' + name + '=([^;]*)');
+    return m ? m[1] : null;
   }
+  const newEventId = () => Date.now().toString();   // evita duplicados
 
-  function newEventId () {                   // evita eventos duplicados
-    return Date.now().toString();            // timestamp → string
-  }
-
-  /* ─── Função central: dispara o postback ─────────────────── */
-  function track (type) {
-    const clickId = getCookie('rtkclickid-store');   // cookie criado pelo universal script
-    if (!clickId) {                                 // cookie ausente → não dispara
-      console.warn('RedTrack: cookie rtkclickid-store não encontrado. Evento "' + type + '" não enviado.');
+  /* ─── Dispara o postback ───────────────────────────────── */
+  function track(type) {
+    const clickId = getCookie('rtkclickid-store');          // cookie do universal script
+    if (!clickId) {
+      console.warn(`RedTrack: cookie ausente – evento “${type}” NÃO enviado.`);
       return;
     }
 
     const url =
       'https://track.thenew-health.online/postback' +
-      '?clickid='        + encodeURIComponent(clickId) +
-      '&rdtk_event_id='  + encodeURIComponent(newEventId()) +
-      '&type='           + encodeURIComponent(type);
+      '?clickid='       + encodeURIComponent(clickId) +
+      '&rdtk_event_id=' + encodeURIComponent(newEventId()) +
+      '&type='          + encodeURIComponent(type);
 
-    new Image().src = url;     // pixel → evita CORS e não bloqueia a página
+    new Image().src = url;       // pixel → evita CORS
     console.log('RedTrack: enviado →', type);
   }
 
-  /* ─── (Opcional) Timer + UI usados no “Pitch” ────────────── */
-  function startOfferTimer () {
-    const offerTimerEls = document.querySelectorAll('.offer-timer-count');
-    if (!offerTimerEls.length) return;
+  /* ─── Timer + UI do Pitch (opcional) ───────────────────── */
+  function startOfferTimer() {
+    const els = document.querySelectorAll('.offer-timer-count');
+    if (!els.length) return;
 
-    let seconds = 1800; // 30 min
+    let s = 1800;                        // 30 min
     const int = setInterval(() => {
-      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-      const s = String(seconds % 60).padStart(2, '0');
+      const mm = String(Math.floor(s / 60)).padStart(2, '0');
+      const ss = String(s % 60).padStart(2, '0');
 
-      offerTimerEls.forEach(el => (el.innerHTML = `<h1>${m}:${s}</h1>`));
+      els.forEach(el => (el.innerHTML = `<h1>${mm}:${ss}</h1>`));
       document.querySelectorAll('.offer-timer-count h1')
-              .forEach(h1 => (h1.textContent = `Oferta expira em ${m}:${s}`));
+        .forEach(h1 => (h1.textContent = `Oferta expira em ${mm}:${ss}`));
 
-      if (--seconds < 0) clearInterval(int);
+      if (--s < 0) clearInterval(int);
     }, 1000);
   }
 
-  function displayOnPitch () {               // abre as seções “escondidas”
+  function displayOnPitch() {
     startOfferTimer();
-    document.querySelectorAll('.display-on-pitch').forEach(el => el.classList.remove('display-on-pitch'));
-    document.querySelector('.scroll-on-pitch')?.scrollIntoView({ behavior: 'smooth' });
+    document.querySelectorAll('.display-on-pitch')
+            .forEach(el => el.classList.remove('display-on-pitch'));
+    document.querySelector('.scroll-on-pitch')
+            ?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  /* ─── Página carregou ───────────────────────────────────── */
+  /* ─── Dispara “VSL View” assim que cookie existir (máx 5 s) ─ */
   window.addEventListener('DOMContentLoaded', () => {
-    track('VSL View');                        // page-view do VSL
+    let tries = 0;
+    const int = setInterval(() => {
+      if (getCookie('rtkclickid-store')) {
+        track('VSL View');
+        clearInterval(int);
+      } else if (++tries >= 17) {        // ~5 s (17×300 ms)
+        clearInterval(int);
+        console.warn('VSL View não disparado: cookie não apareceu em 5 s.');
+      }
+    }, 300);
 
     if (localStorage.getItem('pitchView') === 'true') {
-      displayOnPitch();                       // se já viu o pitch em visita anterior
+      displayOnPitch();
     }
   });
 
-  /* ─── Eventos vindos do SmartPlayer (iframe → postMessage) ─ */
+  /* ─── Mensagens do SmartPlayer ─────────────────────────── */
   window.addEventListener('message', ev => {
     switch (ev.data) {
-      case 'VSL View'          : track('VSL View');                    break;
-      case 'VSL - Lead View'   : track('VSL - Lead View');             break;
+      case 'VSL View'        : track('VSL View');                break;
+      case 'VSL - Lead View' : track('VSL - Lead View');         break;
 
-      case 'VSL - Play'        :
+      case 'VSL - Play':
         track('VSL - Play');
-        document.querySelectorAll('.hide-on-play').forEach(el => (el.style.display = 'none'));
+        document.querySelectorAll('.hide-on-play')
+                .forEach(el => (el.style.display = 'none'));
         break;
 
-      case 'VSL - 3 View'      : track('VSL - 3 View');                break;
-      case 'VSL - 60 View'     : track('VSL - 60 View');               break;
-      case 'VSL - 120 View'    : track('VSL - 120 View');              break;
-      case 'VSL - 300 View'    : track('VSL - 300 View');              break;
+      case 'VSL - 3 View'    : track('VSL - 3 View');            break;
+      case 'VSL - 60 View'   : track('VSL - 60 View');           break;
+      case 'VSL - 120 View'  : track('VSL - 120 View');          break;
+      case 'VSL - 300 View'  : track('VSL - 300 View');          break;
 
-      case 'VSL - Pitch View'  :
-        localStorage.setItem('pitchView', 'true');    // marca que já passou do pitch
+      case 'VSL - Pitch View':
+        localStorage.setItem('pitchView', 'true');
         track('VSL - Pitch View');
         displayOnPitch();
         break;
