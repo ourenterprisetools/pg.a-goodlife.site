@@ -312,6 +312,17 @@
       return;
     }
 
+    /* ★ Envia “VSL View” só 1x por clickID ----------------- */
+    if (type === 'VSL View') {
+      const key = 'vslView:' + clickId;
+      if (localStorage.getItem(key)) {
+        console.log('RedTrack: “VSL View” já enviado para esse clickid.');
+        return;
+      }
+      localStorage.setItem(key, '1');   // marca que já enviou
+    }
+    /* ------------------------------------------------------ */
+
     const url =
       'https://track.thenew-health.online/postback' +
       '?clickid='       + encodeURIComponent(clickId) +
@@ -322,7 +333,7 @@
     console.log('RedTrack: enviado →', type);
   }
 
-  /* ─── Timer + UI do Pitch ──────────────────────────────── */
+  /* ─── Timer + UI do Pitch (inalterado) ─────────────────── */
   function startOfferTimer() {
     const els = document.querySelectorAll('.offer-timer-count');
     if (!els.length) return;
@@ -348,7 +359,7 @@
             ?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  /* ─── VSL View assim que cookie aparecer (máx 5 s) ─────── */
+  /* ─── VSL View: polling até 5 s pelo cookie ────────────── */
   window.addEventListener('DOMContentLoaded', () => {
     let tries = 0;
     const int = setInterval(() => {
@@ -369,7 +380,7 @@
   /* ─── Mensagens do SmartPlayer ─────────────────────────── */
   window.addEventListener('message', ev => {
     switch (ev.data) {
-      /* REMOVIDO: case 'VSL View' */
+      /* REMOVIDO: 'VSL View' duplicado */
 
       case 'VSL - Lead View' : track('VSL - Lead View');         break;
 
