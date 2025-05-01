@@ -302,11 +302,11 @@
     const m = ('; ' + document.cookie).match('; ' + name + '=([^;]*)');
     return m ? m[1] : null;
   }
-  const newEventId = () => Date.now().toString();   // evita duplicados
+  const newEventId = () => Date.now().toString();
 
   /* ─── Dispara o postback ───────────────────────────────── */
   function track(type) {
-    const clickId = getCookie('rtkclickid-store');          // cookie do universal script
+    const clickId = getCookie('rtkclickid-store');
     if (!clickId) {
       console.warn(`RedTrack: cookie ausente – evento “${type}” NÃO enviado.`);
       return;
@@ -318,16 +318,16 @@
       '&rdtk_event_id=' + encodeURIComponent(newEventId()) +
       '&type='          + encodeURIComponent(type);
 
-    new Image().src = url;       // pixel → evita CORS
+    new Image().src = url;
     console.log('RedTrack: enviado →', type);
   }
 
-  /* ─── Timer + UI do Pitch (opcional) ───────────────────── */
+  /* ─── Timer + UI do Pitch ──────────────────────────────── */
   function startOfferTimer() {
     const els = document.querySelectorAll('.offer-timer-count');
     if (!els.length) return;
 
-    let s = 1800;                        // 30 min
+    let s = 1800;
     const int = setInterval(() => {
       const mm = String(Math.floor(s / 60)).padStart(2, '0');
       const ss = String(s % 60).padStart(2, '0');
@@ -348,14 +348,14 @@
             ?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  /* ─── Dispara “VSL View” assim que cookie existir (máx 5 s) ─ */
+  /* ─── VSL View assim que cookie aparecer (máx 5 s) ─────── */
   window.addEventListener('DOMContentLoaded', () => {
     let tries = 0;
     const int = setInterval(() => {
       if (getCookie('rtkclickid-store')) {
         track('VSL View');
         clearInterval(int);
-      } else if (++tries >= 17) {        // ~5 s (17×300 ms)
+      } else if (++tries >= 17) {
         clearInterval(int);
         console.warn('VSL View não disparado: cookie não apareceu em 5 s.');
       }
@@ -369,7 +369,8 @@
   /* ─── Mensagens do SmartPlayer ─────────────────────────── */
   window.addEventListener('message', ev => {
     switch (ev.data) {
-      case 'VSL View'        : track('VSL View');                break;
+      /* REMOVIDO: case 'VSL View' */
+
       case 'VSL - Lead View' : track('VSL - Lead View');         break;
 
       case 'VSL - Play':
@@ -393,6 +394,7 @@
 })();
 </script>
 <!-- ====== /TRACKING ======================================================= -->
+
 
   </body>
 </html>
