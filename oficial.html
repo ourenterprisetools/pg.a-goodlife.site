@@ -263,29 +263,49 @@
     </footer>
 
     <script>
-        (function(window) {
-            window.onpopstate = function() {
-                // Recuperar os subIDs do localStorage
-                let subid = localStorage.getItem('subid') || '';
-                let subid2 = localStorage.getItem('subid2') || '';
-                let subid3 = localStorage.getItem('subid3') || '';
-                let subid4 = localStorage.getItem('subid4') || '';
-                let subid5 = localStorage.getItem('subid5') || '';
-    
-                // Criar a URL de redirecionamento com os subIDs
-                let redirectUrl = new URL("https://track.onebetter-life.site/67f425e5a1b2d8eec81adec4?utm_campaign={replace}&sub2={keyword}&sub3={matchtype}&sub4={adgroupid}&sub5={creative}&sub6={campaignid}&sub7={device}&sub8={adposition}&sub9={network}&sub10={placement}&utm_source=Google&wbraid={wbraid}&gbraid={gbraid}&adgroup={_cj}&creative={_ad}&ref_id={gclid}");
-                if (subid) redirectUrl.searchParams.set('subid', subid);
-                if (subid2) redirectUrl.searchParams.set('subid2', subid2);
-                if (subid3) redirectUrl.searchParams.set('subid3', subid3);
-                if (subid4) redirectUrl.searchParams.set('subid4', subid4);
-                if (subid5) redirectUrl.searchParams.set('subid5', subid5);
-    
-                // Redirecionar para a nova URL com subIDs
-                window.location.href = redirectUrl.toString();
-            };
-            window.history.pushState({}, '');
-        })(window);
-    </script>
+(function (window) {
+
+  /* util para ler cookies */
+  function getCookie(name) {
+    const m = ('; ' + document.cookie).match('; ' + name + '=([^;]*)');
+    return m ? m[1] : null;
+  }
+
+  /* salva o ID da campanha de origem logo que a lander carrega */
+  window.addEventListener('DOMContentLoaded', () => {
+    const cmpId = getCookie('rtkcmpid-store');      // gerado pelo universal‑script
+    if (cmpId) localStorage.setItem('sourceCmp', cmpId);
+  });
+
+  /* back‑redirect simplificado */
+  window.onpopstate = function () {
+    if (sessionStorage.getItem('backRedirectDone')) return;
+    sessionStorage.setItem('backRedirectDone', '1');
+
+    /* URL do DTC (campanha separada) */
+    const redirectUrl = new URL(
+      'https://track.onebetter-life.site/67f425e5a1b2d8eec81adec4' +
+      '?utm_campaign={replace}&utm_source=Google'
+    );
+
+    /* inclui o clickid do visitante */
+    const clickId = getCookie('rtkclickid-store');
+    if (clickId) redirectUrl.searchParams.set('clickid', clickId);
+
+    /* (Opcional) inclui ID da campanha de origem para referência */
+    const srcCmp = localStorage.getItem('sourceCmp');
+    if (srcCmp) redirectUrl.searchParams.set('src_cmp', srcCmp);
+
+    /* redireciona */
+    window.location.href = redirectUrl.toString();
+  };
+
+  /* cria um estado no histórico para que o “voltar” dispare popstate */
+  window.history.pushState({}, '', window.location.href);
+
+})(window);
+</script>
+
 
     <!-- ========== REDTRACK SCRIPT ========== -->
     
