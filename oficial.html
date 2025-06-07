@@ -362,41 +362,50 @@ var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n
     </footer>
 
     
-    <!-- BACK-REDIRECT herdando o click original -->
+    <!-- BACK-REDIRECT clássico (igual ao que funcionava) -->
 <script>
-(function () {
-  /* --- CONFIG QUE VOCÊ AJUSTA ----------------------------------------- */
-  const CHECKOUT_BASE = 'https://sugarsweeptoday.com/dtc-bg/6291';
-  const UTM_SOURCE    = 'TikTok';          // ← agora está correto
-  const UTM_CAMPAIGN  = '{replace}';       // mantenha ou troque por macro
-  /* -------------------------------------------------------------------- */
+(function (window) {
 
-  const getCookie = n => ('; '+document.cookie).match('; '+n+'=([^;]*)')?.[1]||null;
-  history.pushState({}, '', location.href);
+  /* ─ util p/ ler cookie simples ─ */
+  function getCookie (name) {
+    const m = ('; ' + document.cookie).match('; ' + name + '=([^;]*)');
+    return m ? m[1] : null;
+  }
 
-  window.onpopstate = () => {
-    if (sessionStorage.backRedirectDone) return;
+  /* grava o ID da campanha de origem logo no load */
+  window.addEventListener('DOMContentLoaded', () => {
+    const cmpId = getCookie('rtkcmpid-store');            // setado pelo script do RedTrack
+    if (cmpId) localStorage.setItem('sourceCmp', cmpId);  // guardamos p/ usar no redirect
+  });
+
+  /* ─ dispara quando o visitante pressiona “voltar” ─ */
+  window.onpopstate = function () {
+    if (sessionStorage.backRedirectDone) return;          // evita loop
     sessionStorage.backRedirectDone = '1';
 
-    const clickId = getCookie('rtkclickid-store');   // do anúncio (camp. A)
-    const cmpId   = getCookie('rtkcmpid-store');     // ID da campanha A
+    /* URL final do CHECKOUT */
+    const url = new URL('https://sugarsweeptoday.com/dtc-bg/?aff_id=6291');
+    url.searchParams.set('utm_campaign', '{replace}');    // troque se quiser macro diferente
+    url.searchParams.set('utm_source',   'TikTok');       // agora é TikTok
 
-    const url = new URL(CHECKOUT_BASE);
-    url.searchParams.set('aff_id', AFF_ID);
+    /* aproveita o MESMO clique do anúncio (campanha A) */
+    const clickId = getCookie('rtkclickid-store');        // ex.: 681d…
+    const srcCmp  = localStorage.getItem('sourceCmp');    // ex.: 681e0179…
 
     if (clickId) {
-      url.searchParams.set('subid',   clickId);  // rede/BuyGoods
-      url.searchParams.set('rtkcid',  clickId);  // RedTrack (mesmo clique)
-      url.searchParams.set('clickid', clickId);  // postback
+      url.searchParams.set('subid',   clickId);           // rede / BuyGoods
+      url.searchParams.set('rtkcid',  clickId);           // RedTrack: mantém o mesmo click
+      url.searchParams.set('clickid', clickId);           // BuyGoods postback
     }
-    if (cmpId) url.searchParams.set('subid5', cmpId); // campanha origem
+    if (srcCmp)  url.searchParams.set('subid5', srcCmp);  // campanha de origem
 
-    url.searchParams.set('utm_source',   UTM_SOURCE);   // “TikTok”
-    url.searchParams.set('utm_campaign', UTM_CAMPAIGN); // ex.: {adset_name}
-
-    location.href = url.toString();
+    window.location.href = url.toString();
   };
-})();
+
+  /* adiciona a entrada fantasma p/ ‘Voltar’ acionar popstate */
+  window.history.pushState({}, '', location.href);
+
+})(window);
 </script>
 
 
